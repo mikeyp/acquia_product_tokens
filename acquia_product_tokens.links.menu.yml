@@ -1,0 +1,5 @@
+acquia_product_tokens.admin_settings:
+  route_name: acquia_product_tokens.admin_settings
+  title: 'Acquia Product Tokens Settings'
+  description: 'Define Product tokens'
+  parent: system.admin_config_content

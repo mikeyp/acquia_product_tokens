@@ -1,0 +1,7 @@
+acquia_product_tokens.admin_settings:
+  path: /admin/config/content/acquia_product_tokens
+  defaults:
+    _title: 'Acquia Product Tokens Settings'
+    _form: \Drupal\acquia_product_tokens\Form\AcquiaProductTokensAdminSettings
+  requirements:
+    _permission: 'administer acquia product tokens'

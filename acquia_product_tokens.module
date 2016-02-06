@@ -5,43 +5,27 @@
  */
 
 /**
- * Implements hook_perm().
- */
-function acquia_product_tokens_perm() {
-  return array('administer acquia product tokens');
-}
-
-/**
- * Implements hook_menu().
- */
-function acquia_product_tokens_menu() {
-  $items = array();
-  $items['admin/settings/acquia_product_tokens/settings'] = array(
-    'title' => 'Acquia Product Tokens Settings',
-    'description' => 'Define Product tokens',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('acquia_product_tokens_admin_settings'),
-    'access arguments' => array('administer acquia product tokens'),
-    'type' => MENU_NORMAL_ITEM,
-    'file' => 'acquia_product_tokens.admin.inc',
-  );
-  return $items;
-}
-
-
-/**
- * Implements hook_token_list().
+ * Implements hook_token_info().
  *
  * Lists tokens for all the different acquia products.
  */
-function acquia_product_tokens_token_list($type = 'all') {
+function acquia_product_tokens_token_info() {
   $tokens = array();
   // Obtain all the Acquia Products defined by the Administrator.
-  $products_tokens = acquia_product_tokens_get_values();
+  $product_tokens = acquia_product_tokens_get_values();
   foreach ($product_tokens as $product_token) {
-    $tokens['global'][$product_token['token']] = $product_token['product_name'];
+    $tokens[$product_token['token']] = array(
+      'name' => $product_token['product_name'],
+    );
   }
-  return $tokens;
+  $type = array(
+    'name' => t('Acquia product'),
+    'description' => t('Tokens related to acquia products.'),
+  );
+  return array(
+    'types' => array('acquia-product' => $type),
+    'tokens' => array('acquia-product' => $tokens),
+  );
 }
 
 /**
@@ -49,6 +33,7 @@ function acquia_product_tokens_token_list($type = 'all') {
  */
 function acquia_product_tokens_token_values($type, $object = NULL, $options = array()) {
   $values = array();
+  return $values;
   switch ($type) {
     case 'global':
       $product_tokens = acquia_product_tokens_get_values();
@@ -141,9 +126,3 @@ function acquia_product_tokens_preprocess(&$variables, $hook) {
   }
 }
 
-/**
- * Corrects the title tokens text replacements in the search results.
- */
-function acquia_product_tokens_apachesolr_index_document_build_node(ApacheSolrDocument $document, $entity, $env_id) {
-  $document->label = acquia_product_tokens_replace($entity->title);
-}
