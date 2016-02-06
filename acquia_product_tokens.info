@@ -1,0 +1,5 @@
+name = Acquia Product Tokens
+description = Provides tokens for the different Acquia Products.
+core = 6.x
+package = Acquia
+dependencies[] = "token_filter"

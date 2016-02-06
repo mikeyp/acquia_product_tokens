@@ -1,0 +1,149 @@
+<?php
+/**
+ * @file
+ * This module provides tokens for all the different Acquia Products.
+ */
+
+/**
+ * Implements hook_perm().
+ */
+function acquia_product_tokens_perm() {
+  return array('administer acquia product tokens');
+}
+
+/**
+ * Implements hook_menu().
+ */
+function acquia_product_tokens_menu() {
+  $items = array();
+  $items['admin/settings/acquia_product_tokens/settings'] = array(
+    'title' => 'Acquia Product Tokens Settings',
+    'description' => 'Define Product tokens',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('acquia_product_tokens_admin_settings'),
+    'access arguments' => array('administer acquia product tokens'),
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'acquia_product_tokens.admin.inc',
+  );
+  return $items;
+}
+
+
+/**
+ * Implements hook_token_list().
+ *
+ * Lists tokens for all the different acquia products.
+ */
+function acquia_product_tokens_token_list($type = 'all') {
+  $tokens = array();
+  // Obtain all the Acquia Products defined by the Administrator.
+  $products_tokens = acquia_product_tokens_get_values();
+  foreach ($product_tokens as $product_token) {
+    $tokens['global'][$product_token['token']] = $product_token['product_name'];
+  }
+  return $tokens;
+}
+
+/**
+ * Implements hook_token_values().
+ */
+function acquia_product_tokens_token_values($type, $object = NULL, $options = array()) {
+  $values = array();
+  switch ($type) {
+    case 'global':
+      $product_tokens = acquia_product_tokens_get_values();
+      foreach ($product_tokens as $product_token) {
+        $values[$product_token['token']] = $product_token['product_name'];
+      }
+      break;
+  }
+  return $values;
+}
+
+/**
+ * Implements hook_nodeapi().
+ */
+function acquia_product_tokens_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
+  switch ($op) {
+    case 'view':
+      $node->title = acquia_product_tokens_replace(check_plain($node->title));
+      if ((bool) $a4) {
+        drupal_set_title($node->title);
+      }
+      break;
+  }
+}
+
+/**
+ * Replaces all tokens in the outputs of all views.
+ */
+function acquia_product_tokens_views_post_render(&$view, &$output, &$cache) {
+  $output = acquia_product_tokens_replace($output);
+}
+
+/**
+ * Converts text inserted by user into product/token array.
+ */
+function acquia_product_tokens_get_values() {
+  $text = variable_get('acquia_product_tokens', '');
+  $products_tokens = array();
+  $lines = explode("\n", $text);
+  foreach ($lines as $line) {
+    if (!empty($line)) {
+      list($product_name, $token) = explode('|', $line);
+      $product_token = array();
+      $product_token['product_name'] = check_plain(trim($product_name));
+      $product_token['token'] = check_plain(trim($token));
+      $product_tokens[] = $product_token;
+    }
+  }
+  return $product_tokens;
+}
+
+/**
+ * Wrapper function that searches and replaces tokens in the input text.
+ */
+function acquia_product_tokens_replace($text) {
+  $output = preg_replace_callback("|\[token ([^ ]*) ([^]]*)\]|i", 'token_filter_replacetoken', $text);
+  return $output;
+}
+
+/**
+ * Implements hook_preprocess().
+ *
+ * This function operates at the module level to change the HTML that
+ * is sent to the theme, after replacing product tokens.
+ *
+ * This function replaces tokens for blocks and faq-qa templates.
+ * Implementation of other templates have to be included here.
+ */
+function acquia_product_tokens_preprocess(&$variables, $hook) {
+  if (isset($variables['block']->module) && $variables['block']->module == 'book') {
+    // Corrects the output in the blocks.
+    $variables['block']->content = acquia_product_tokens_replace($variables['block']->content);
+  }
+  elseif (isset($variables['book_link']['module']) && $variables['book_link']['module'] == 'book') {
+    // Corrects the output in the book links at the bottom of the node.
+    $variables['prev_title'] = acquia_product_tokens_replace($variables['prev_title']);
+    $variables['next_title'] = acquia_product_tokens_replace($variables['next_title']);
+  }
+  elseif (isset($variables['class']) && $variables['class'] == 'faq-qa') {
+    // Corrects the output in the faq.
+    foreach ($variables['data'] as $key => $node) {
+      $variables['data'][$key]->title = acquia_product_tokens_replace($node->title);
+      $variables['data'][$key]->question = acquia_product_tokens_replace($node->question);
+    }
+    foreach ($variables['question_list'] as $key => $question) {
+      $variables['question_list'][$key] = acquia_product_tokens_replace($question);
+    }
+  }
+  else {
+  }
+}
+
+/**
+ * Corrects the title tokens text replacements in the search results.
+ */
+function acquia_product_tokens_apachesolr_index_document_build_node(ApacheSolrDocument $document, $entity, $env_id) {
+  $document->label = acquia_product_tokens_replace($entity->title);
+}
