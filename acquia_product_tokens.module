@@ -7,7 +7,7 @@
 /**
  * Implements hook_token_info().
  *
- * Lists tokens for all the different acquia products.
+ * Lists tokens for all the different Acquia products.
  */
 function acquia_product_tokens_token_info() {
   $tokens = array();
@@ -20,7 +20,7 @@ function acquia_product_tokens_token_info() {
   }
   $type = array(
     'name' => t('Acquia product'),
-    'description' => t('Tokens related to acquia products.'),
+    'description' => t('Tokens for representing Acquia product names (becuase marketing likes to change them).'),
   );
   return array(
     'types' => array('acquia-product' => $type),
@@ -46,30 +46,49 @@ function acquia_product_tokens_token_values($type, $object = NULL, $options = ar
 }
 
 /**
- * Implements hook_nodeapi().
+ * Implements hook_ENTITY_TYPE_view().
  */
-function acquia_product_tokens_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
-  switch ($op) {
-    case 'view':
-      $node->title = acquia_product_tokens_replace(check_plain($node->title));
-      if ((bool) $a4) {
-        drupal_set_title($node->title);
-      }
-      break;
+function acquia_product_tokens_node_view(array &$build, \Drupal\Core\Entity\EntityInterface $entity, \Drupal\Core\Entity\Display\EntityViewDisplayInterface $display, $view_mode) {
+  if (empty($build['title']['#post_render'])) {
+    $build['title']['#post_render'] = array();
   }
+  $build['title']['#post_render'][] = 'acquia_product_tokens_render_post_render';
 }
 
 /**
- * Replaces all tokens in the outputs of all views.
+ * Post-render callback.
+ *
+ * @param string $html
+ *   The already rendered string.
+ * @param array $elements
+ *   The render array being rendered
+ *
+ * @return string
+ *   The content with Acquia Product tokens replaced.
  */
-function acquia_product_tokens_views_post_render(&$view, &$output, &$cache) {
-  $output = acquia_product_tokens_replace($output);
+function acquia_product_tokens_render_post_render($html, array $elements) {
+  // @todo create a UI setting for this.
+  $options['clear'] = TRUE;
+  return \Drupal::service('acquia_product_tokens.token')->replace($html, array(), $options);
+}
+
+/**
+ * Replaces all Acquia product tokens in the outputs of all views.
+ */
+function acquia_product_tokens_views_post_render(\Drupal\views\ViewExecutable $view, &$output, \Drupal\views\Plugin\views\cache\CachePluginBase $cache) {
+  if (is_array($output)) {
+    if (empty($output['#post_render'])) {
+      $output['#post_render'] = array();
+    }
+    $output['#post_render'][] = 'acquia_product_tokens_render_post_render';
+  }
 }
 
 /**
  * Converts text inserted by user into product/token array.
  */
 function acquia_product_tokens_get_values() {
+  return array();
   $text = variable_get('acquia_product_tokens', '');
   $products_tokens = array();
   $lines = explode("\n", $text);
