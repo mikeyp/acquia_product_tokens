@@ -90,7 +90,9 @@ function acquia_product_tokens_views_post_render(\Drupal\views\ViewExecutable $v
 /**
  * Implments hook_preprocess_book_tree()
  *
- * @param $variables
+ * Recursively replace titles in the book tree for the book navigation.
+ *
+ * @param array $variables
  */
 function acquia_product_tokens_preprocess_book_tree(array &$variables) {
   if (!empty($variables['items'])) {
@@ -113,9 +115,9 @@ function acquia_product_tokens_recurse_book_tree(array &$items) {
 }
 
 /**
- * Implments hook_preprocess_book_tree()
+ * Implments hook_preprocess_book_navigation()
  *
- * @param $variables
+ * @param array $variables
  */
 function acquia_product_tokens_preprocess_book_navigation(array &$variables) {
   // Corrects the output in the book links at the bottom of the node.
@@ -123,25 +125,4 @@ function acquia_product_tokens_preprocess_book_navigation(array &$variables) {
   $variables['next_title'] = \Drupal::service('acquia_product_tokens.token')->replace($variables['next_title']);
 }
 
-/**
- * Implements hook_preprocess().
- *
- * This function operates at the module level to change the HTML that
- * is sent to the theme, after replacing product tokens.
- *
- * This function replaces tokens for blocks and faq-qa templates.
- * Implementation of other templates have to be included here.
- */
-function acquia_product_tokens_preprocess(&$variables, $hook) {
-  if (isset($variables['class']) && $variables['class'] == 'faq-qa') {
-    // Corrects the output in the faq.
-    foreach ($variables['data'] as $key => $node) {
-      $variables['data'][$key]->title = acquia_product_tokens_replace($node->title);
-      $variables['data'][$key]->question = acquia_product_tokens_replace($node->question);
-    }
-    foreach ($variables['question_list'] as $key => $question) {
-      $variables['question_list'][$key] = acquia_product_tokens_replace($question);
-    }
-  }
-}
 
