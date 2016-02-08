@@ -1,4 +1,4 @@
 services:
   acquia_product_tokens.token:
     class: Drupal\acquia_product_tokens\Utility\AcquiaProductToken
-    arguments: ['@module_handler', '@cache.discovery', '@language_manager', '@cache_tags.invalidator', '@renderer']
+    arguments: ['@module_handler', '@cache.discovery', '@language_manager', '@cache_tags.invalidator', '@renderer', '@config.factory']

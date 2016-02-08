@@ -12,9 +12,9 @@
 function acquia_product_tokens_token_info() {
   $tokens = array();
   // Obtain all the Acquia Products defined by the Administrator.
-  $product_tokens = acquia_product_tokens_get_values();
-  foreach ($product_tokens as $product_token) {
-    $tokens[$product_token['token']] = array(
+  $product_tokens = \Drupal::service('acquia_product_tokens.token')->getValues();
+  foreach ($product_tokens as $name => $product_token) {
+    $tokens[$name] = array(
       'name' => $product_token['product_name'],
     );
   }
@@ -29,20 +29,25 @@ function acquia_product_tokens_token_info() {
 }
 
 /**
- * Implements hook_token_values().
+ * Implements hook_tokens().
  */
-function acquia_product_tokens_token_values($type, $object = NULL, $options = array()) {
-  $values = array();
-  return $values;
-  switch ($type) {
-    case 'global':
-      $product_tokens = acquia_product_tokens_get_values();
-      foreach ($product_tokens as $product_token) {
-        $values[$product_token['token']] = $product_token['product_name'];
+function acquia_product_tokens_tokens($type, $tokens, array $data, array $options, \Drupal\Core\Render\BubbleableMetadata $bubbleable_metadata) {
+  $replacements = array();
+
+  if ($type == 'acquia-product') {
+    $config = \Drupal::config('acquia_product_tokens.settings');
+    $bubbleable_metadata->addCacheableDependency($config);
+    foreach ($tokens as $name => $original) {
+      $values = \Drupal::service('acquia_product_tokens.token')->getValues();
+      if (isset($values[$name])) {
+        $replacements[$original] = $values[$name]['product_name'];
       }
-      break;
+      else {
+        $replacements[$original] = $config->get('missing_token_text');
+      }
+    }
   }
-  return $values;
+  return $replacements;
 }
 
 /**
@@ -67,9 +72,7 @@ function acquia_product_tokens_node_view(array &$build, \Drupal\Core\Entity\Enti
  *   The content with Acquia Product tokens replaced.
  */
 function acquia_product_tokens_render_post_render($html, array $elements) {
-  // @todo create a UI setting for this.
-  $options['clear'] = TRUE;
-  return \Drupal::service('acquia_product_tokens.token')->replace($html, array(), $options);
+  return \Drupal::service('acquia_product_tokens.token')->replace($html);
 }
 
 /**
@@ -82,34 +85,6 @@ function acquia_product_tokens_views_post_render(\Drupal\views\ViewExecutable $v
     }
     $output['#post_render'][] = 'acquia_product_tokens_render_post_render';
   }
-}
-
-/**
- * Converts text inserted by user into product/token array.
- */
-function acquia_product_tokens_get_values() {
-  return array();
-  $text = variable_get('acquia_product_tokens', '');
-  $products_tokens = array();
-  $lines = explode("\n", $text);
-  foreach ($lines as $line) {
-    if (!empty($line)) {
-      list($product_name, $token) = explode('|', $line);
-      $product_token = array();
-      $product_token['product_name'] = check_plain(trim($product_name));
-      $product_token['token'] = check_plain(trim($token));
-      $product_tokens[] = $product_token;
-    }
-  }
-  return $product_tokens;
-}
-
-/**
- * Wrapper function that searches and replaces tokens in the input text.
- */
-function acquia_product_tokens_replace($text) {
-  $output = preg_replace_callback("|\[token ([^ ]*) ([^]]*)\]|i", 'token_filter_replacetoken', $text);
-  return $output;
 }
 
 /**

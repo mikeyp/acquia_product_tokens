@@ -27,6 +27,7 @@ class AcquiaProductTokensAdminSettings extends ConfigFormBase {
     $config = $this->config('acquia_product_tokens.settings');
 
     $config->set('tokens', $form_state->getValue('tokens'));
+    $config->set('missing_token_text', $form_state->getValue('missing_token_text'));
     $config->save();
 
     parent::submitForm($form, $form_state);
@@ -39,21 +40,32 @@ class AcquiaProductTokensAdminSettings extends ConfigFormBase {
     return ['acquia_product_tokens.settings'];
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function buildForm(array $form, FormStateInterface $form_state) {
 
     $config = $this->config('acquia_product_tokens.settings');
     $form['tokens'] = array(
      '#type' => 'textarea',
-     '#title' => t('Definition of Acquia Products and tokens'),
+     '#title' => $this->t('Definition of Acquia Products and tokens'),
      '#default_value' => $config->get('tokens'),
-     '#description' => t('Insert the Product name and its token one per line in this format "Product name|token".'),
+     '#description' => $this->t('Insert the Product name and its token one per line in this format "Product name|token".'),
      '#size' => 60,
      '#required' => TRUE,
    );
-
+    $form['missing_token_text'] = array(
+      '#type' => 'textfield',
+      '#title' => $this->t('Replacement text for missing Acquia Product tokens'),
+      '#default_value' => $config->get('missing_token_text'),
+      '#description' => $this->t('If empty, any tokens with missing values will essentially be deleted from the output.'),
+    );
     return parent::buildForm($form, $form_state);
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function validateForm(array &$form, FormStateInterface $form_state) {
     // Implements some validation.
     $lines = explode("\n", $form_state->getValue('tokens'));

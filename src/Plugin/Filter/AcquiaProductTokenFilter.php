@@ -8,7 +8,6 @@
 namespace Drupal\acquia_product_tokens\Plugin\Filter;
 
 use Drupal\acquia_product_tokens\Utility\AcquiaProductToken;
-use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\Render\RendererInterface;
 use Drupal\filter\FilterProcessResult;
@@ -20,7 +19,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  *
  * @Filter(
  *   id = "acquia_product_token_filter",
- *   title = @Translation("Replaces Acquia Product tokens with their values"),
+ *   title = @Translation("Replace Acquia Product tokens with their values"),
  *   type = Drupal\filter\Plugin\FilterInterface::TYPE_TRANSFORM_IRREVERSIBLE,
  *   settings = { }
  * )
@@ -35,6 +34,13 @@ class AcquiaProductTokenFilter extends FilterBase implements ContainerFactoryPlu
   protected $token;
 
   /**
+   * The renderer service.
+   *
+   * @var \Drupal\Core\Render\RendererInterface
+   */
+  protected $renderer;
+
+  /**
    * Constructs a token filter plugin.
    *
    * @param array $configuration
@@ -46,9 +52,10 @@ class AcquiaProductTokenFilter extends FilterBase implements ContainerFactoryPlu
    * @param \Drupal\acquia_product_tokens\Utility\AcquiaProductToken $token
    *   The Acquia Product token service.
    */
-  public function __construct(array $configuration, $plugin_id, $plugin_definition, AcquiaProductToken $token, RendererInterface $renderer, ModuleHandlerInterface $module_handler) {
+  public function __construct(array $configuration, $plugin_id, $plugin_definition, AcquiaProductToken $token, RendererInterface $renderer) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
     $this->token = $token;
+    $this->renderer = $renderer;
   }
 
   /**
@@ -59,7 +66,8 @@ class AcquiaProductTokenFilter extends FilterBase implements ContainerFactoryPlu
       $configuration,
       $plugin_id,
       $plugin_definition,
-      $container->get('acquia_product_tokens.token')
+      $container->get('acquia_product_tokens.token'),
+      $container->get('renderer')
     );
   }
 
@@ -75,7 +83,18 @@ class AcquiaProductTokenFilter extends FilterBase implements ContainerFactoryPlu
    */
   public function tips($long = FALSE) {
     if ($long) {
-      return $this->t('Acquia Product tokens are replaced with their values.@available', array('@available' => ''));
+      $values = array();
+      foreach ($this->token->getValues() as $name => $product_token) {
+        $values[] = $product_token['token'];
+      }
+      $available = array(
+        '#prefix' => '<br />',
+        '#plain_text' => implode(', ', $values),
+        '#cache' => array(
+          'tags' => array('config:acquia_product_tokens.settings'),
+        ),
+      );
+      return $this->t('Acquia Product tokens are replaced with their values.@available', array('@available' => $this->renderer->render($available)));
     }
     else {
       return $this->t('Acquia Product tokens are replaced with their values.@available', array('@available' => ''));
