@@ -125,4 +125,15 @@ function acquia_product_tokens_preprocess_book_navigation(array &$variables) {
   $variables['next_title'] = \Drupal::service('acquia_product_tokens.token')->replace($variables['next_title']);
 }
 
-
+/**
+ * Implements hook_system_breadcrumb_alter()
+ */
+function acquia_product_tokens_system_breadcrumb_alter(\Drupal\Core\Breadcrumb\Breadcrumb $breadcrumb, $route_match, $context) {
+  foreach ($breadcrumb->getLinks() as $link) {
+    $text = $link->getText();
+    // Don't operate on objects wrapping translateable text.
+    if (is_string($text)) {
+      $link->setText(\Drupal::service('acquia_product_tokens.token')->replace($text));
+    }
+  }
+}
