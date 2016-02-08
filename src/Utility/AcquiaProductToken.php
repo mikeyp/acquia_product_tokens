@@ -17,7 +17,7 @@ use Drupal\Core\Utility\Token;
 class AcquiaProductToken extends Token {
 
   /**
-   * The config factory to get the installed themes.
+   * The config factory to get the token values.
    *
    * @var \Drupal\Core\Config\ConfigFactoryInterface
    */
