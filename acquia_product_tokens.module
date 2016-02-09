@@ -58,17 +58,41 @@ function acquia_product_tokens_tokens($type, $tokens, array $data, array $option
  */
 function acquia_product_tokens_node_load(array $entities) {
   foreach ($entities as $nid => $node) {
-    if (isset($node->token_title)) {
-      $title = $node->token_title->value;
-      if (strpos($title, '[acquia-product:') !== FALSE) {
-        $node->setTitle(\Drupal::service('acquia_product_tokens.token')->replace($title));
-        $node->addCacheTags(array('config:acquia_product_tokens.settings'));
-      }
-      elseif ($title) {
-        $node->setTitle($title);
-      }
+    acquia_product_tokens_node_fixup($node);
+  }
+}
+
+/**
+ * Helper function to copy the token_title to title with replacement.
+ *
+ * @param \Drupal\node\NodeInterface $node
+ */
+function acquia_product_tokens_node_fixup(\Drupal\node\NodeInterface $node) {
+  if (isset($node->token_title)) {
+    $title = $node->token_title->value;
+    if (strpos($title, '[acquia-product:') !== FALSE) {
+      $node->setTitle(\Drupal::service('acquia_product_tokens.token')->replace($title));
+      $node->addCacheTags(array('config:acquia_product_tokens.settings'));
+    }
+    elseif ($title) {
+      $node->setTitle($title);
     }
   }
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_presave()
+ *
+ * Act on a specific type of entity before it is created or updated.
+ *
+ * @param \Drupal\Core\Entity\EntityInterface $entity
+ *   The entity object.
+ *
+ * @ingroup entity_crud
+ * @see hook_entity_presave()
+ */
+function acquia_product_tokens_node_presave(\Drupal\node\NodeInterface $node) {
+  acquia_product_tokens_node_fixup($node);
 }
 
 /**
