@@ -1,0 +1,27 @@
+<?php
+
+
+/**
+ * Implements hook_install().
+ */
+function acquia_product_tokens_install() {
+  acquia_product_tokens_update_8001();
+}
+
+/**
+ * Install the token_title field for nodes.
+ */
+function acquia_product_tokens_update_8001() {
+  foreach (acquia_product_tokens_node_fields() as $name => $storage_definition) {
+    \Drupal::entityDefinitionUpdateManager()
+      ->installFieldStorageDefinition($name, 'node', 'acquia_product_tokens', $storage_definition);
+  }
+  $database = \Drupal::database();
+  $database->update('node_field_data')
+    ->fields(['token_title' => 'title'])
+    ->execute();
+  $database = \Drupal::database();
+  $database->update('node_field_revision')
+    ->fields(['token_title' => 'title'])
+    ->execute();
+}

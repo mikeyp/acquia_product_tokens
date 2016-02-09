@@ -24,6 +24,11 @@ class AcquiaProductToken extends Token {
   protected $configFactory;
 
   /**
+   * @var array
+   */
+  protected $tokenValues;
+
+  /**
    * Constructs a new class instance.
    *
    * @param \Drupal\Core\Extension\ModuleHandlerInterface $module_handler
@@ -46,20 +51,24 @@ class AcquiaProductToken extends Token {
    * Converts text inserted by user into product/token array.
    */
   public function getValues() {
-    $config = $this->configFactory->get('acquia_product_tokens.settings');
-    $text = $config->get('tokens');
-    $product_tokens = array();
-    $lines = explode("\n", $text);
-    foreach ($lines as $line) {
-      if (!empty($line)) {
-        list($product_name, $token) = explode('|', $line);
-        $item = array();
-        $item['product_name'] = trim($product_name);
-        $item['token'] = '[acquia-product:' . $token . ']';
-        $product_tokens[$token] = $item;
+    if (!isset($this->tokenValues)) {
+      $config = $this->configFactory->get('acquia_product_tokens.settings');
+      $text = $config->get('tokens');
+      $product_tokens = array();
+      $lines = explode("\n", $text);
+      foreach ($lines as $line) {
+        if (!empty($line)) {
+          list($product_name, $token) = explode('|', $line);
+          $token = trim($token);
+          $item = array();
+          $item['product_name'] = trim($product_name);
+          $item['token'] = '[acquia-product:' . $token . ']';
+          $product_tokens[$token] = $item;
+        }
       }
+      $this->tokenValues = $product_tokens;
     }
-    return $product_tokens;
+    return $this->tokenValues;
   }
 
   /**

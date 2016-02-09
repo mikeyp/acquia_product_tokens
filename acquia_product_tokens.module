@@ -51,13 +51,24 @@ function acquia_product_tokens_tokens($type, $tokens, array $data, array $option
 }
 
 /**
- * Implements hook_ENTITY_TYPE_view().
+ * Implements hook_ENTITY_TYPE_load()
+ *
+ * @param \Drupal\node\NodeInterface[] $entities
+ *   The entities keyed by entity ID.
  */
-function acquia_product_tokens_node_view(array &$build, \Drupal\Core\Entity\EntityInterface $entity, \Drupal\Core\Entity\Display\EntityViewDisplayInterface $display, $view_mode) {
-  if (empty($build['title']['#post_render'])) {
-    $build['title']['#post_render'] = array();
+function acquia_product_tokens_node_load(array $entities) {
+  foreach ($entities as $nid => $node) {
+    if (isset($node->token_title)) {
+      $title = $node->token_title->value;
+      if (strpos($title, '[acquia-product:') !== FALSE) {
+        $node->setTitle(\Drupal::service('acquia_product_tokens.token')->replace($title));
+        $node->addCacheTags(array('config:acquia_product_tokens.settings'));
+      }
+      elseif ($title) {
+        $node->setTitle($title);
+      }
+    }
   }
-  $build['title']['#post_render'][] = 'acquia_product_tokens_render_post_render';
 }
 
 /**
@@ -88,52 +99,33 @@ function acquia_product_tokens_views_post_render(\Drupal\views\ViewExecutable $v
 }
 
 /**
- * Implments hook_preprocess_book_tree()
+ * Implementation of hook_entity_base_field_info()
  *
- * Recursively replace titles in the book tree for the book navigation.
- *
- * @param array $variables
+ * @param \Drupal\Core\Entity\EntityTypeInterface $entity_type
+ * @return array
  */
-function acquia_product_tokens_preprocess_book_tree(array &$variables) {
-  if (!empty($variables['items'])) {
-    acquia_product_tokens_recurse_book_tree($variables['items']);
+function acquia_product_tokens_entity_base_field_info(\Drupal\Core\Entity\EntityTypeInterface $entity_type) {
+  if ($entity_type->id() == 'node') {
+    return acquia_product_tokens_node_fields();
   }
 }
 
-/**
- * Recursive helper function to replace titles in book navigation.
- *
- * @param array $items
- */
-function acquia_product_tokens_recurse_book_tree(array &$items) {
-  foreach ($items as $idx => $item) {
-    $items[$idx]['title'] = \Drupal::service('acquia_product_tokens.token')->replace($item['title']);
-    if (!empty($items[$idx]['below'])) {
-      acquia_product_tokens_recurse_book_tree($items[$idx]['below']);
-    }
-  }
-}
+function acquia_product_tokens_node_fields() {
+  $fields = array();
+  $fields['token_title'] = \Drupal\Core\Field\BaseFieldDefinition::create('string')
+    ->setLabel(t('Title with tokens'))
+    ->setRequired(TRUE)
+    ->setTranslatable(TRUE)
+    ->setRevisionable(TRUE)
+    ->setSetting('max_length', 255)
+    ->setDisplayOptions('view', array(
+      'type' => 'hidden',
+    ))
+    ->setDisplayOptions('form', array(
+      'type' => 'string_textfield',
+      'weight' => -6,
+    ))
+    ->setDisplayConfigurable('form', TRUE);
 
-/**
- * Implments hook_preprocess_book_navigation()
- *
- * @param array $variables
- */
-function acquia_product_tokens_preprocess_book_navigation(array &$variables) {
-  // Corrects the output in the book links at the bottom of the node.
-  $variables['prev_title'] = \Drupal::service('acquia_product_tokens.token')->replace($variables['prev_title']);
-  $variables['next_title'] = \Drupal::service('acquia_product_tokens.token')->replace($variables['next_title']);
-}
-
-/**
- * Implements hook_system_breadcrumb_alter()
- */
-function acquia_product_tokens_system_breadcrumb_alter(\Drupal\Core\Breadcrumb\Breadcrumb $breadcrumb, $route_match, $context) {
-  foreach ($breadcrumb->getLinks() as $link) {
-    $text = $link->getText();
-    // Don't operate on objects wrapping translateable text.
-    if (is_string($text)) {
-      $link->setText(\Drupal::service('acquia_product_tokens.token')->replace($text));
-    }
-  }
+  return $fields;
 }
