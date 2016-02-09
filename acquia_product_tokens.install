@@ -18,10 +18,10 @@ function acquia_product_tokens_update_8001() {
   }
   $database = \Drupal::database();
   $database->update('node_field_data')
-    ->fields(['token_title' => 'title'])
+    ->expression('token_title', 'title')
     ->execute();
   $database = \Drupal::database();
   $database->update('node_field_revision')
-    ->fields(['token_title' => 'title'])
+    ->expression('token_title', 'title')
     ->execute();
 }
