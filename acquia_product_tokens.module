@@ -153,3 +153,30 @@ function acquia_product_tokens_node_fields() {
 
   return $fields;
 }
+
+/**
+ * Alter base field definitions for a content entity type.
+ *
+ * @param \Drupal\Core\Field\FieldDefinitionInterface[] $fields
+ *   The array of base field definitions for the entity type.
+ * @param \Drupal\Core\Entity\EntityTypeInterface $entity_type
+ *   The entity type definition.
+ */
+function acquia_product_tokens_entity_base_field_info_alter(array &$fields, \Drupal\Core\Entity\EntityTypeInterface $entity_type) {
+  // Alter the mymodule_text field to use a custom class.
+  if ($entity_type->id() == 'node') {
+    $fields['title']->setDisplayConfigurable('form', FALSE);
+  }
+}
+
+/**
+ * Implement hook_form_BASE_FORM_ID_alter().
+ *
+ * @param array $form
+ * @param \Drupal\Core\Form\FormStateInterface $form_state
+ * @param $form_id
+ */
+function acquia_product_tokens_form_node_form_alter(array &$form, \Drupal\Core\Form\FormStateInterface $form_state, $form_id) {
+  // Hide the title field on the node form.
+  $form['title']['#access'] = FALSE;
+}
